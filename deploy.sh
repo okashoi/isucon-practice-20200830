@@ -13,12 +13,12 @@ sudo systemctl stop mysql
 echo ''  | sudo tee /var/log/mysql/mysql-slow.log /var/log/nginx/access.log
 
 # 各種サービス起動
-sudo systemctl stop mysql
-sudo systemctl stop isubata.golang.service
-sudo systemctl stop nginx
+sudo systemctl start mysql
+sudo systemctl start isubata.golang.service
+sudo systemctl start nginx
 
 # slow query log の設定
-mysql -uisucon -pisucon << EOF
+sudo mysql << EOF
 set global slow_query_log_file = '/var/log/mysql/mysql-slow.log';
 set global long_query_time = 0.1;
 set global slow_query_log = ON;
