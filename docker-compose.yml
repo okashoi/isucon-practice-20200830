@@ -19,6 +19,8 @@ services:
         command: "make -f Makefile.Docker build run/docker"
         volumes:
           - "$PWD/webapp:/opt/isucon/webapp"
+        ports:
+          - "5000:5000"
 
     db:
         image: mysql:5.7
