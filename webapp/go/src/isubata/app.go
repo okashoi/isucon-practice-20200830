@@ -710,6 +710,12 @@ func getIcon(c echo.Context) error {
 		return err
 	}
 
+	// ファイルとして書き出し
+	err = ioutil.WriteFile("/home/isucon/isubata/webapp/public/icons/" + name, data, 0666)
+	if err != nil {
+		return err
+	}
+
 	mime := ""
 	switch true {
 	case strings.HasSuffix(name, ".jpg"), strings.HasSuffix(name, ".jpeg"):
