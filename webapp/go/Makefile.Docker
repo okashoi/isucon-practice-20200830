@@ -1,0 +1,8 @@
+build:
+	go build -v -o isubata src/isubata/app.go
+
+vet:
+	go vet ./src/isubata/...
+
+run/docker: build
+	./docker.env.sh
