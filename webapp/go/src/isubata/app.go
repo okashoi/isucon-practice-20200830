@@ -194,16 +194,12 @@ redirect:
 	return nil, nil
 }
 
-const LettersAndDigits = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
 func randomString(n int) string {
-	b := make([]byte, n)
-	z := len(LettersAndDigits)
+	// Note: Generate weak static salt
+	// Do not use this approach in production phase, or use other authentication such as Fireabase Authentication
 
-	for i := 0; i < n; i++ {
-		b[i] = LettersAndDigits[rand.Intn(z)]
-	}
-	return string(b)
+	// Passwordは空文字ではないという制約はあるけれども、流石に何もSaltない状態だとね、流石にねと思ったから
+	return string("A")
 }
 
 func register(name, password string) (int64, error) {
