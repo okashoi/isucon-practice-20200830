@@ -132,20 +132,13 @@ type MessageWithUser struct {
 	User      User      `db:"user"`
 }
 
-func queryMessages(chanID, lastID int64) ([]Message, error) {
-	msgs := []Message{}
-	err := db.Select(&msgs, "SELECT * FROM message WHERE id > ? AND channel_id = ? ORDER BY id DESC LIMIT 100",
-		lastID, chanID)
-	return msgs, err
-}
-
-func queryJsonableMessages(chanID, lastID int64) ([]MessageWithUser, error) {
+func queryJsonableMessages(chanID, lastID, limit int64) ([]MessageWithUser, error) {
 	msgs := []MessageWithUser{}
 	err := db.Select(&msgs, `
 	SELECT ms.*, us.id as "user.id", us.name as "user.name", us.display_name as "user.display_name", us.avatar_icon as "user.avatar_icon", us.created_at as "user.created_at" FROM message ms
 	JOIN user us on us.id = ms.user_id
-	WHERE ms.id > ? AND channel_id = ? ORDER BY ms.id DESC LIMIT 100`,
-		lastID, chanID)
+	WHERE ms.id > ? AND channel_id = ? ORDER BY ms.id DESC LIMIT ?`,
+		lastID, chanID, limit)
 	return msgs, err
 }
 
@@ -410,7 +403,7 @@ func getMessage(c echo.Context) error {
 		return err
 	}
 
-	messages, err := queryJsonableMessages(chanID, lastID)
+	messages, err := queryJsonableMessages(chanID, lastID, 100)
 	if err != nil {
 		return err
 	}
@@ -544,17 +537,15 @@ func getHistory(c echo.Context) error {
 		return ErrBadReqeust
 	}
 
-	messages := []Message{}
-	err = db.Select(&messages,
-		"SELECT * FROM message WHERE channel_id = ? ORDER BY id DESC LIMIT ? OFFSET ?",
-		chID, N, (page-1)*N)
+	messages := []MessageWithUser{}
+	messages, err = queryJsonableMessages(chID, (page-1)*N, N)
 	if err != nil {
 		return err
 	}
 
 	mjson := make([]map[string]interface{}, 0)
 	for i := len(messages) - 1; i >= 0; i-- {
-		r, err := jsonifyMessage(messages[i])
+		r, err := jsonifyUserJoinedMessage(messages[i])
 		if err != nil {
 			return err
 		}
