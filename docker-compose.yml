@@ -4,7 +4,8 @@ services:
     proxy:
         image: nginx:1.14.1
         volumes:
-          - "$PWD/etc/nginx/:/etc/nginx/"
+          - "$PWD/etc/nginx:/etc/nginx"
+          - "$PWD/webpapp/public:/home/isucon/isubata/webapp/public"
         ports:
           - "80:80"
         depends_on:
