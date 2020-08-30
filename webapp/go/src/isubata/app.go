@@ -12,7 +12,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	_ "net/http/pprof"
+	// _ "net/http/pprof"
 	"os"
 	"strconv"
 	"strings"
@@ -745,9 +745,9 @@ func tRange(a, b int64) []int64 {
 }
 
 func main() {
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
+	// go func() {
+		// log.Println(http.ListenAndServe("localhost:6060", nil))
+	// }()
 
 	e := echo.New()
 	funcs := template.FuncMap{
