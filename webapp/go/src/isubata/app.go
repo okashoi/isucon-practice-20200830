@@ -43,6 +43,14 @@ func (r *Renderer) Render(w io.Writer, name string, data interface{}, c echo.Con
 	return r.templates.ExecuteTemplate(w, name, data)
 }
 
+// https://stackoverrun.com/ja/q/11104843
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
 func init() {
 	seedBuf := make([]byte, 8)
 	crand.Read(seedBuf)
@@ -711,7 +719,8 @@ func getIcon(c echo.Context) error {
 	}
 
 	// ファイルとして書き出し
-	err = ioutil.WriteFile("/home/isucon/isubata/webapp/public/icons/" + name, data, 0666)
+	cacheDir := getEnv("CACHE_GO_ICON_DIR", "/home/isucon/isubata/webapp/public/icons/")
+	err = ioutil.WriteFile(cacheDir+name, data, 0666)
 	if err != nil {
 		return err
 	}
