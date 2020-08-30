@@ -11,6 +11,7 @@ services:
         depends_on:
           - db
           - app
+          - redis
 
     app:
         build:
@@ -37,4 +38,9 @@ services:
           - "$PWD/db/init/init.sh:/docker-entrypoint-initdb.d/01.sh"
           - "$PWD/bench/isucon7q-initial-dataset.sql.gz:/docker-entrypoint-initdb.d/02.sql.gz"
           - "$PWD/db/:/opt/dbseed/"
+
+    redis:
+      image: "redis:latest"
+      ports:
+        - "6379:6379"
 

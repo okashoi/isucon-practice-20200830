@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-redis/redis"
 	"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
@@ -33,6 +34,7 @@ const (
 var (
 	db            *sqlx.DB
 	ErrBadReqeust = echo.NewHTTPError(http.StatusBadRequest)
+	client        *redis.Client
 )
 
 type Renderer struct {
@@ -90,6 +92,12 @@ func init() {
 	db.SetMaxOpenConns(20)
 	db.SetConnMaxLifetime(5 * time.Minute)
 	log.Printf("Succeeded to connect db.")
+
+	client = redis.NewClient(&redis.Options{
+		Addr:     "redis:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
 }
 
 type User struct {
@@ -423,13 +431,7 @@ func getMessage(c echo.Context) error {
 	}
 
 	if len(messages) > 0 {
-		_, err := db.Exec("INSERT INTO haveread (user_id, channel_id, message_id, updated_at, created_at)"+
-			" VALUES (?, ?, ?, NOW(), NOW())"+
-			" ON DUPLICATE KEY UPDATE message_id = ?, updated_at = NOW()",
-			userID, chanID, messages[0].ID, messages[0].ID)
-		if err != nil {
-			return err
-		}
+		client.Set(strconv.FormatInt(userID, 10)+":"+strconv.FormatInt(chanID, 10), strconv.FormatInt(messages[0].ID, 10), 0)
 	}
 
 	return c.JSON(http.StatusOK, response)
@@ -442,24 +444,15 @@ func queryChannels() ([]int64, error) {
 }
 
 func queryHaveRead(userID, chID int64) (int64, error) {
-	type HaveRead struct {
-		UserID    int64     `db:"user_id"`
-		ChannelID int64     `db:"channel_id"`
-		MessageID int64     `db:"message_id"`
-		UpdatedAt time.Time `db:"updated_at"`
-		CreatedAt time.Time `db:"created_at"`
-	}
-	h := HaveRead{}
+	val, err := client.Get(strconv.FormatInt(userID, 10) + ":" + strconv.FormatInt(chID, 10)).Result()
 
-	err := db.Get(&h, "SELECT * FROM haveread WHERE user_id = ? AND channel_id = ?",
-		userID, chID)
-
-	if err == sql.ErrNoRows {
+	if err == redis.Nil {
 		return 0, nil
 	} else if err != nil {
 		return 0, err
 	}
-	return h.MessageID, nil
+	convertedStrInt64, _ := strconv.ParseInt(val, 10, 64)
+	return convertedStrInt64, nil
 }
 
 func fetchUnread(c echo.Context) error {
