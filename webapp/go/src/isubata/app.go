@@ -711,7 +711,7 @@ func getIcon(c echo.Context) error {
 	}
 
 	// ファイルとして書き出し
-	err = ioutil.WriteFile("../../../public/icons" + name, data, 0666)
+	err = ioutil.WriteFile("../../../public/icons/" + name, data, 0666)
 	if err != nil {
 		return err
 	}
