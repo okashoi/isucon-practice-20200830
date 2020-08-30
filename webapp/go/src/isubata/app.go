@@ -123,9 +123,28 @@ type Message struct {
 	CreatedAt time.Time `db:"created_at"`
 }
 
+type MessageWithUser struct {
+	ID        int64     `db:"id"`
+	ChannelID int64     `db:"channel_id"`
+	UserID    int64     `db:"user_id"`
+	Content   string    `db:"content"`
+	CreatedAt time.Time `db:"created_at"`
+	User      User      `db:"user"`
+}
+
 func queryMessages(chanID, lastID int64) ([]Message, error) {
 	msgs := []Message{}
 	err := db.Select(&msgs, "SELECT * FROM message WHERE id > ? AND channel_id = ? ORDER BY id DESC LIMIT 100",
+		lastID, chanID)
+	return msgs, err
+}
+
+func queryJsonableMessages(chanID, lastID int64) ([]MessageWithUser, error) {
+	msgs := []MessageWithUser{}
+	err := db.Select(&msgs, `
+	SELECT ms.*, us.id as "user.id", us.name as "user.name", us.display_name as "user.display_name", us.avatar_icon as "user.avatar_icon", us.created_at as "user.created_at" FROM message ms
+	JOIN user us on us.id = ms.user_id
+	WHERE ms.id > ? AND channel_id = ? ORDER BY ms.id DESC LIMIT 100`,
 		lastID, chanID)
 	return msgs, err
 }
@@ -367,6 +386,15 @@ func jsonifyMessage(m Message) (map[string]interface{}, error) {
 	return r, nil
 }
 
+func jsonifyUserJoinedMessage(m MessageWithUser) (map[string]interface{}, error) {
+	r := make(map[string]interface{})
+	r["id"] = m.ID
+	r["user"] = m.User
+	r["date"] = m.CreatedAt.Format("2006/01/02 15:04:05")
+	r["content"] = m.Content
+	return r, nil
+}
+
 func getMessage(c echo.Context) error {
 	userID := sessUserID(c)
 	if userID == 0 {
@@ -382,7 +410,7 @@ func getMessage(c echo.Context) error {
 		return err
 	}
 
-	messages, err := queryMessages(chanID, lastID)
+	messages, err := queryJsonableMessages(chanID, lastID)
 	if err != nil {
 		return err
 	}
@@ -390,7 +418,7 @@ func getMessage(c echo.Context) error {
 	response := make([]map[string]interface{}, 0)
 	for i := len(messages) - 1; i >= 0; i-- {
 		m := messages[i]
-		r, err := jsonifyMessage(m)
+		r, err := jsonifyUserJoinedMessage(m)
 		if err != nil {
 			return err
 		}
